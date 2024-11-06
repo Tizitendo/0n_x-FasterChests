@@ -1,6 +1,6 @@
 # Onyx-FasterChests
 - Chests drop items immediately
-- Option to only enable after teleporter Event
+- Option for Balance Mode (only enables after teleporter and increases timer by the time saved)
 
 ## Special Thanks To
 * The Return Of Modding Discord
