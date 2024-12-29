@@ -1,6 +1,6 @@
 log.info("Successfully loaded " .. _ENV["!guid"] .. ".")
 params = {}
-mods["RoRRModdingToolkit-RoRR_Modding_Toolkit"].auto()
+mods["RoRRModdingToolkit-RoRR_Modding_Toolkit"].auto(true)
 mods.on_all_mods_loaded(function()
     for k, v in pairs(mods) do
         if type(v) == "table" and v.tomlfuncs then
@@ -14,31 +14,35 @@ mods.on_all_mods_loaded(function()
 end)
 
 local Reset = false
-local Teleporter = nil
 local Director = nil
 local Hud = nil
 local FinishedTele = false
 local TimeIncrease = true
 local chests = {}
 local index = 1
+local Director = nil
 
 Initialize(function()
     -- set open delay on balanced
-    Callback.add("onSecond", "FasterChests-onSecond", function()
-        if Teleporter ~= nil and Teleporter.time >= Teleporter.maxtime then
-            Teleporter = nil
+    Callback.add("onSecond", "FasterChests-onSecond", function(arg1, arg2)
+        if Director.teleporter_active > 1 and not FinishedTele then
             FinishedTele = true
             for i = 1, index do
-                if chests[i].open_delay ~= nil then
+                if chests[i] ~= nil and chests[i].open_delay ~= nil then
                     chests[i].open_delay = 1.0
                 end
             end
         end
     end)
 
-    --Timeincrease is to only increase by one second every other chest
-    Callback.add("onPlayerInit", "FasterChests-onPlayerInit", function()
-        TimeIncrease = true
+    -- TimeIncrease is to only increase by one second every other chest
+    Callback.add("onGameStart", "FasterChests-onGameStart", function()
+        local function GameStarted()
+            TimeIncrease = true
+            Director = GM._mod_game_getDirector()
+            Hud = GM._mod_game_getHUD
+        end
+        Alarm.create(GameStarted, 1)
     end)
 
     Callback.add("onStageStart", "FasterChests-onStageStart", function()
@@ -52,7 +56,6 @@ end)
 gm.post_script_hook(gm.constants.interactable_init_cost, function(self, other, result, args)
     -- reset chest list
     if Reset then
-        Teleporter = nil;
         FinishedTele = false
         chests = {}
         index = 1
@@ -69,21 +72,7 @@ gm.post_script_hook(gm.constants.interactable_init_cost, function(self, other, r
     end
 end)
 
-gm.post_script_hook(gm.constants.instance_create_depth, function(self, other, result, args)
-    if result.value.object_index == gm.constants.oDirectorControl then
-        Director = result.value
-    end
-    if result.value.object_index == gm.constants.oHUD then
-        Hud = result.value
-    end
-end)
-
 gm.post_script_hook(gm.constants.interactable_set_active, function(self, other, result, args)
-    -- get teleporter value
-    if args[1].value.mountain ~= nil then
-        Teleporter = args[1].value
-    end
-
     -- increase time
     if args[1].value.open_delay == 1.0 then
         if FinishedTele and params.Balanced then
@@ -99,8 +88,16 @@ gm.post_script_hook(gm.constants.interactable_set_active, function(self, other, 
     end
 end)
 
--- Add ImGui window
+-- Gui
 gui.add_to_menu_bar(function()
     params.Balanced = ImGui.Checkbox("Balanced mode", params.Balanced)
     Toml.save_cfg(_ENV["!guid"], params)
+end)
+-- Add ImGui window
+gui.add_imgui(function()
+    if ImGui.Begin("Faster Chests") then
+        params.Balanced = ImGui.Checkbox("Balanced mode", params.Balanced)
+    Toml.save_cfg(_ENV["!guid"], params)
+    end
+    ImGui.End()
 end)
