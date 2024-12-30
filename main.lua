@@ -40,7 +40,7 @@ Initialize(function()
         local function GameStarted()
             TimeIncrease = true
             Director = GM._mod_game_getDirector()
-            Hud = GM._mod_game_getHUD
+            Hud = GM._mod_game_getHUD()
         end
         Alarm.create(GameStarted, 1)
     end)
